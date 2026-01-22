@@ -125,12 +125,15 @@ export function DashboardGrid({ onAddWidget, onEditWidget }: DashboardGridProps)
           
           <button
             onClick={onAddWidget}
-            className="h-[300px] rounded-xl border-2 border-dashed border-border hover:border-primary/50 hover:bg-card/50 transition-all flex flex-col items-center justify-center gap-4 group"
+            className="h-[300px] rounded-xl border border-dashed border-gray-700 hover:border-green-500/50 hover:bg-[#131b2e]/50 transition-all flex flex-col items-center justify-center gap-4 group"
           >
-             <div className="h-12 w-12 rounded-full bg-secondary group-hover:bg-primary/20 flex items-center justify-center transition-colors">
-                <Plus className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+             <div className="h-16 w-16 rounded-full bg-green-500/10 group-hover:bg-green-500/20 flex items-center justify-center transition-all">
+                <Plus className="h-8 w-8 text-green-500 transition-colors" />
              </div>
-             <span className="text-muted-foreground font-medium group-hover:text-foreground">Add Widget</span>
+             <div className="flex flex-col items-center gap-1">
+                 <span className="text-white font-medium text-lg">Add Widget</span>
+                 <span className="text-gray-400 text-sm">Connect to a finance API and create a custom widget</span>
+             </div>
           </button>
         </div>
       </SortableContext>
