@@ -5,14 +5,18 @@ import { useWidgetData } from '@/hooks/useWidgetData';
 import { PriceCard } from './visualizations/PriceCard';
 import { DataTable } from './visualizations/DataTable';
 import { SimpleChart } from './visualizations/SimpleChart';
-import { Trash2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Trash2, RefreshCw, AlertCircle, Settings, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
-export function WidgetCard({ widget }: { widget: Widget }) {
+export function WidgetCard({ widget, onEdit }: { widget: Widget; onEdit?: () => void }) {
   const { removeWidget, isEditMode } = useDashboardStore();
   const { data, loading, error } = useWidgetData(widget);
 
   const renderContent = () => {
+    // ... existing renderContent logic is fine, we don't change it here, wait
+    // I need to include renderContent in replacement or use a targeted replacement for just the header part.
+    // simpler to replace the top part.
     if (error) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-destructive text-center p-4">
@@ -38,7 +42,7 @@ export function WidgetCard({ widget }: { widget: Widget }) {
       case 'price-card':
         return <PriceCard data={data} selectedFields={widget.data.selectedFields || []} />;
       case 'table':
-        return <DataTable data={data} selectedFields={widget.data.selectedFields || []} />;
+        return <DataTable data={data} selectedFields={widget.data.selectedFields || []} compact={true} />;
       case 'chart':
         return <SimpleChart data={data} selectedFields={widget.data.selectedFields || []} />;
       default:
@@ -53,22 +57,37 @@ export function WidgetCard({ widget }: { widget: Widget }) {
     )}>
       
       {/* Widget Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/20">
-        <h3 className="font-semibold text-sm truncate pr-2" title={widget.data.title}>
-          {widget.data.title}
-        </h3>
-        <div className="flex items-center gap-2">
-           {loading && <RefreshCw className="h-3 w-3 animate-spin text-muted-foreground" />}
-           
-           {isEditMode && (
-             <button 
-               onClick={() => removeWidget(widget.id)}
-               className="h-6 w-6 rounded hover:bg-destructive/10 hover:text-destructive flex items-center justify-center transition-colors"
-             >
-               <Trash2 className="h-3.5 w-3.5" />
-             </button>
-           )}
-        </div>
+      <div className="flex flex-col gap-2 p-4 pb-0">
+         <div className="flex items-start justify-between">
+            <div>
+              <h3 className="font-bold text-lg text-blue-500 truncate" title={widget.data.title}>
+                {widget.data.title}
+              </h3>
+              <div className="flex items-center gap-2 mt-1">
+                 <span className="px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-500 text-[10px] font-medium border border-orange-500/20">
+                    {new URL(widget.data.apiEndpoint).hostname.split('.')[0] === 'www' ? new URL(widget.data.apiEndpoint).hostname.split('.')[1] : new URL(widget.data.apiEndpoint).hostname.split('.')[0]} 
+                 </span>
+                 <span className="text-[10px] text-muted-foreground">{widget.data.refreshInterval}s refresh</span>
+              </div>
+            </div>
+         </div>
+         
+         <div className="flex gap-2 mt-1">
+             <Link href={`/widget/${widget.id}`} className="flex-1">
+                <button className="w-full flex items-center justify-center gap-2 px-3 py-1.5 bg-secondary/50 hover:bg-secondary text-secondary-foreground text-xs font-medium rounded-md transition-colors">
+                    <Eye className="h-3.5 w-3.5" />
+                    View
+                </button>
+             </Link>
+             {isEditMode && (
+                <button 
+                  onClick={() => removeWidget(widget.id)}
+                  className="px-3 py-1.5 bg-destructive/10 hover:bg-destructive/20 text-destructive text-xs font-medium rounded-md transition-colors"
+                >
+                   <Trash2 className="h-3.5 w-3.5" />
+                </button>
+             )}
+         </div>
       </div>
 
       {/* Widget Content */}

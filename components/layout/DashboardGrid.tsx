@@ -15,13 +15,20 @@ import {
   sortableKeyboardCoordinates,
   rectSortingStrategy,
 } from '@dnd-kit/sortable';
-import { useDashboardStore } from '@/store/useDashboardStore';
+import { Widget, useDashboardStore } from '@/store/useDashboardStore';
 import { SortableItem } from '@/components/ui/SortableItem';
 import { WidgetCard } from '@/components/widgets/WidgetCard';
-import { Plus } from 'lucide-react';
+import { Plus, LayoutGrid } from 'lucide-react';
 
-export function DashboardGrid({ onAddWidget }: { onAddWidget: () => void }) {
+interface DashboardGridProps {
+  onAddWidget: () => void;
+  onEditWidget?: (widget: Widget) => void;
+}
+
+export function DashboardGrid({ onAddWidget, onEditWidget }: DashboardGridProps) {
   const { widgets, reorderWidgets } = useDashboardStore();
+
+  // ... (sensors logic same)
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -45,7 +52,7 @@ export function DashboardGrid({ onAddWidget }: { onAddWidget: () => void }) {
   }
 
   if (widgets.length === 0) {
-    return (
+      return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 animate-in fade-in duration-500">
         <div className="bg-card p-6 rounded-full mb-6 border border-dashed border-border">
           <Plus className="h-12 w-12 text-muted-foreground" />
@@ -112,7 +119,7 @@ export function DashboardGrid({ onAddWidget }: { onAddWidget: () => void }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6">
           {widgets.map((widget) => (
             <SortableItem key={widget.id} id={widget.id} className="h-[300px]">
-              <WidgetCard widget={widget} />
+              <WidgetCard widget={widget} onEdit={() => onEditWidget?.(widget)} />
             </SortableItem>
           ))}
           

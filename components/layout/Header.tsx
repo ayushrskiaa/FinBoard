@@ -5,9 +5,49 @@ import { useDashboardStore } from '@/store/useDashboardStore';
 import { cn } from '@/lib/utils';
 
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { Download, Upload } from 'lucide-react';
+import { useRef } from 'react';
 
 export function Header({ onAddWidget }: { onAddWidget: () => void }) {
-  const { isEditMode, toggleEditMode, widgets } = useDashboardStore();
+  const { isEditMode, toggleEditMode, widgets, reorderWidgets } = useDashboardStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = () => {
+    const data = JSON.stringify({ widgets }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finboard-config-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (Array.isArray(json.widgets)) {
+           if (confirm('This will replace your current dashboard. Continue?')) {
+             reorderWidgets(json.widgets);
+           }
+        } else {
+           alert('Invalid configuration file');
+        }
+      } catch (err) {
+        alert('Failed to parse file');
+      }
+    };
+    reader.readAsText(file);
+    // Reset inputs
+    e.target.value = '';
+  };
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
@@ -25,6 +65,30 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
         </div>
 
         <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 mr-2">
+             <button 
+               onClick={handleExport}
+               className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
+               title="Export Config"
+             >
+               <Download className="h-4 w-4" />
+             </button>
+             <button 
+               onClick={() => fileInputRef.current?.click()}
+               className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
+               title="Import Config"
+             >
+               <Upload className="h-4 w-4" />
+             </button>
+             <input 
+               type="file" 
+               ref={fileInputRef} 
+               className="hidden" 
+               accept=".json"
+               onChange={handleImport}
+             />
+          </div>
+
           <ThemeToggle />
           <div className="h-6 w-px bg-border mx-1" />
           <button

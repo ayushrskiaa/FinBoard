@@ -22,10 +22,11 @@ interface SimpleChartProps {
 export function SimpleChart({ data, selectedFields }: SimpleChartProps) {
   if (!data || selectedFields.length === 0) return null;
 
-  const firstField = selectedFields[0];
-  const arrayPath = firstField.substring(0, firstField.lastIndexOf('[]') + 2);
+  const arrayField = selectedFields.find(f => f.includes('[]')) || selectedFields[0];
+  const bracketIndex = arrayField.indexOf('[]');
+  const arrayPath = bracketIndex !== -1 ? arrayField.substring(0, bracketIndex + 2) : '';
 
-  if (!arrayPath || arrayPath === firstField) {
+  if (!arrayPath || arrayPath === arrayField) {
       return <div className="p-4 text-muted-foreground">Select fields inside an array for the chart.</div>;
   }
 
@@ -46,12 +47,19 @@ export function SimpleChart({ data, selectedFields }: SimpleChartProps) {
   let dataKeyY = '';
 
   if (selectedFields.length >= 2) {
-    dataKeyX = selectedFields[0].replace(arrayPath + '.', '');
-    dataKeyY = selectedFields[1].replace(arrayPath + '.', '');
+    // Robust cleanup of prefix (compatible with old . and new / separators)
+    const cleanX = selectedFields[0].replace(arrayPath, '');
+    const cleanY = selectedFields[1].replace(arrayPath, '');
+    
+    // Remove leading separator if present
+    dataKeyX = cleanX.startsWith('/') || cleanX.startsWith('.') ? cleanX.slice(1) : cleanX;
+    dataKeyY = cleanY.startsWith('/') || cleanY.startsWith('.') ? cleanY.slice(1) : cleanY;
+    
     xKey = dataKeyX;
     yKey = dataKeyY;
   } else {
-    dataKeyY = selectedFields[0].replace(arrayPath + '.', '');
+    const cleanY = selectedFields[0].replace(arrayPath, '');
+    dataKeyY = cleanY.startsWith('/') || cleanY.startsWith('.') ? cleanY.slice(1) : cleanY;
     yKey = dataKeyY;
   }
 

@@ -1,33 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Check, Search, AlertCircle, Loader2 } from 'lucide-react';
 import { fetchApiData, flattenObjectKeys } from '@/lib/api-helper';
-import { useDashboardStore, WidgetType } from '@/store/useDashboardStore';
+import { useDashboardStore, WidgetType, Widget } from '@/store/useDashboardStore';
 import { cn } from '@/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 interface AddWidgetModalProps {
   onClose: () => void;
+  initialWidget?: Widget;
 }
 
-export function AddWidgetModal({ onClose }: AddWidgetModalProps) {
-  const addWidget = useDashboardStore((s) => s.addWidget);
+export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) {
+  const { addWidget, updateWidget } = useDashboardStore();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2>(initialWidget ? 2 : 1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Connection State
-  const [url, setUrl] = useState('');
-  const [apiData, setApiData] = useState<any>(null);
-  const [availableFields, setAvailableFields] = useState<string[]>([]);
+  const [url, setUrl] = useState(initialWidget?.data.apiEndpoint || '');
+  const [apiData, setApiData] = useState<any>(initialWidget?.data.cachedData || null);
+  const [availableFields, setAvailableFields] = useState<string[]>(
+    initialWidget?.data.cachedData ? flattenObjectKeys(initialWidget.data.cachedData) : []
+  );
   
   // Configuration State
-  const [title, setTitle] = useState('');
-  const [refreshInterval, setRefreshInterval] = useState(30);
-  const [selectedFields, setSelectedFields] = useState<string[]>([]);
-  const [displayMode, setDisplayMode] = useState<WidgetType>('price-card');
+  const [title, setTitle] = useState(initialWidget?.data.title || '');
+  const [refreshInterval, setRefreshInterval] = useState(initialWidget?.data.refreshInterval || 30);
+  const [selectedFields, setSelectedFields] = useState<string[]>(initialWidget?.data.selectedFields || []);
+  const [displayMode, setDisplayMode] = useState<WidgetType>(initialWidget?.data.displayMode || 'price-card');
+
+  useEffect(() => {
+     // If editing, valid data exists, but maybe we want to refresh fields just in case?
+     // For now relying on cachedData is faster.
+  }, [initialWidget]);
 
   const handleTestConnection = async () => {
     if (!url) return;
@@ -47,20 +55,26 @@ export function AddWidgetModal({ onClose }: AddWidgetModalProps) {
   };
 
   const handleSave = () => {
-    const newWidget = {
-      id: uuidv4(),
-      data: {
-        title: title || 'New Widget',
-        apiEndpoint: url,
-        refreshInterval,
-        selectedFields,
-        displayMode,
-        cachedData: apiData,
-        lastUpdated: Date.now(),
-      },
-      layout: { w: 1, h: 1, x: 0, y: 0 } // Layout is handled by grid flow, these are just defaults
+    const widgetData: any = { // Partial<Widget> logic
+      title: title || 'New Widget',
+      apiEndpoint: url,
+      refreshInterval,
+      selectedFields,
+      displayMode,
+      cachedData: apiData,
+      lastUpdated: Date.now(),
     };
-    addWidget(newWidget);
+
+    if (initialWidget) {
+       updateWidget(initialWidget.id, { data: widgetData });
+    } else {
+       const newWidget = {
+        id: uuidv4(),
+        data: widgetData,
+        layout: { w: 1, h: 1, x: 0, y: 0 } 
+       };
+       addWidget(newWidget);
+    }
     onClose();
   };
 

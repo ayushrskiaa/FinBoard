@@ -13,7 +13,9 @@ export function PriceCard({ data, selectedFields }: PriceCardProps) {
     <div className="flex flex-col gap-4 h-full justify-center">
       {selectedFields.map((field, index) => {
         const value = getValueByPath(data, field);
-        const label = field.split('.').pop();
+        // Robust label extraction
+        const parts = field.split(/[/.]/);
+        const label = parts[parts.length - 1] || field;
         
         // Emphasize the first field as primary
         const isPrimary = index === 0;

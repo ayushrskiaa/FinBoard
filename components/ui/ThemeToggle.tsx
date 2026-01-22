@@ -6,11 +6,26 @@ import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 
 export function ThemeToggle({ className }: { className?: string }) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <div className="w-9 h-9" />; // Placeholder
+  }
+
+  const toggleTheme = () => {
+    const newTheme = resolvedTheme === "dark" ? "light" : "dark";
+    console.log(`Toggling theme from ${theme} (resolved: ${resolvedTheme}) to ${newTheme}`);
+    setTheme(newTheme);
+  };
 
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+      onClick={toggleTheme}
       className={cn("relative p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors", className)}
       title="Toggle Theme"
     >
