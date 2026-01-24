@@ -8,6 +8,15 @@ export async function fetchApiData(url: string) {
     }
   }
 
+  // Inject API Key for Finnhub if missing
+  if (url.includes('finnhub.io') && !url.includes('token=')) {
+    const apiKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+    if (apiKey) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}token=${apiKey}`;
+    }
+  }
+
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Status: ${res.status}`);

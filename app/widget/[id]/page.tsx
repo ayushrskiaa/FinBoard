@@ -31,11 +31,23 @@ export default function WidgetDetailsPage({ params }: { params: Promise<{ id: st
     const router = useRouter();
     const widget = useDashboardStore((state) => state.widgets.find((w) => w.id === id));
     
-    // We can reuse the useWidgetData hook to get fresh data/loading/error
-    // But we need to handle "widget not found" first.
+    // Fix hydration mismatch by ensuring we only render based on store data on client
+    const [isMounted, setIsMounted] = useState(false);
+    useEffect(() => setIsMounted(true), []);
+
+    if (!isMounted) {
+        return (
+             <div className="min-h-screen flex items-center justify-center text-muted-foreground bg-background">
+                <div className="flex flex-col items-center gap-2">
+                    <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+                    <p>Loading widget...</p>
+                </div>
+             </div>
+        );
+    }
     
     if (!widget) {
-       // Handle loading or not found
+       // Handle loading or not found AFTER mount
        return (
          <div className="min-h-screen flex items-center justify-center text-muted-foreground bg-background">
             <div className="text-center">
@@ -56,76 +68,139 @@ function WidgetDetailsContent({ widget }: { widget: Widget }) {
     const { data: liveData, loading, error } = useWidgetData(widget);
     const data = liveData || widget.data.cachedData;
 
-    const [activeTab, setActiveTab] = useState<'chart' | 'table' | 'json'>('chart');
-    
     // --- Statistics Calculation ---
     const stats = useMemo(() => {
-        if (!data || !widget.data.selectedFields?.length) return null;
-        
-        const { rows } = getArrayData(data, widget.data.selectedFields);
-        if (!rows || rows.length < 2) return null;
+        if (!data) return null;
 
-        // Try to find a numeric field to use for price
-        // Usually the second field in selection if first is date? Or just the first numeric one?
-        // Let's mimic SimpleChart logic: Y-axis is usually the value.
-        // If > 1 field, field[1] is Y. If 1 field, field[0] is Y.
-        let valueField = widget.data.selectedFields[0];
-        if (widget.data.selectedFields.length >= 2) {
-             valueField = widget.data.selectedFields[1]; // Typically X, Y. So Y is at [1].
+        // 1. Array Data (Time Series / List)
+        if (Array.isArray(data) || (widget.data.selectedFields?.length && widget.data.selectedFields.some(f => f.includes('[]')))) {
+            const { rows } = getArrayData(data, widget.data.selectedFields || []);
+            if (!rows || rows.length < 2) return null;
+
+            // Try to find a numeric field to use for price
+            let valueField = widget.data.selectedFields![0];
+            if (widget.data.selectedFields!.length >= 2) {
+                 valueField = widget.data.selectedFields![1]; // Typically X, Y. So Y is at [1].
+            }
+            
+            const arrayField = widget.data.selectedFields!.find(f => f.includes('[]')) || widget.data.selectedFields![0];
+            const bracketIndex = arrayField.indexOf('[]');
+            const arrayPath = bracketIndex !== -1 ? arrayField.substring(0, bracketIndex + 2) : '';
+            
+            const cleanKey = valueField.replace(arrayPath, '');
+            const key = cleanKey.startsWith('/') || cleanKey.startsWith('.') ? cleanKey.slice(1) : cleanKey;
+
+            const current = getValueByPath(rows[0], key);
+            const previous = getValueByPath(rows[1], key);
+            
+            const curVal = parseFloat(current);
+            const prevVal = parseFloat(previous);
+            
+            if (isNaN(curVal) || isNaN(prevVal)) return null;
+
+            const change = curVal - prevVal;
+            const changePercent = (change / prevVal) * 100;
+
+            return {
+                current: curVal,
+                change: change,
+                changePercent: changePercent
+            };
+        }
+
+        // 2. Finnhub Quote (c, d, dp)
+        // Check for common Finnhub keys if specific structure matches
+        if (data.c !== undefined && data.d !== undefined && data.dp !== undefined) {
+             return {
+                 current: data.c,
+                 change: data.d,
+                 changePercent: data.dp
+             };
+        }
+
+        // 3. AlphaVantage Global Quote
+        const gQuote = data['Global Quote'];
+        if (gQuote) {
+            const price = parseFloat(gQuote['05. price']);
+            const change = parseFloat(gQuote['09. change']);
+            const changePercentStr = gQuote['10. change percent'] || '';
+            const changePercent = parseFloat(changePercentStr.replace('%', ''));
+            
+            if (!isNaN(price) && !isNaN(change)) {
+                 return {
+                     current: price,
+                     change: change,
+                     changePercent: isNaN(changePercent) ? 0 : changePercent
+                 };
+            }
         }
         
-        // Clean field path relative to the row
-        // Recalculate array path to strip it
-        const arrayField = widget.data.selectedFields.find(f => f.includes('[]')) || widget.data.selectedFields[0];
-        const bracketIndex = arrayField.indexOf('[]');
-        const arrayPath = bracketIndex !== -1 ? arrayField.substring(0, bracketIndex + 2) : '';
-        
-        const cleanKey = valueField.replace(arrayPath, '');
-        const key = cleanKey.startsWith('/') || cleanKey.startsWith('.') ? cleanKey.slice(1) : cleanKey;
+        // 4. Fallback for Coinbase / CoinCap single asset
+        // CoinCap Asset: data.priceUsd, data.changePercent24Hr
+        if (data.data && data.data.priceUsd && data.data.changePercent24Hr) {
+             const price = parseFloat(data.data.priceUsd);
+             const changeP = parseFloat(data.data.changePercent24Hr);
+             // Approximate change value since we only have percent
+             const change = price - (price / (1 + changeP/100)); // Current - Prev
+             
+             return {
+                 current: price,
+                 change: change,
+                 changePercent: changeP
+             };
+        }
 
-        // Assuming rows are time-ordered. 
-        // AlphaVantage: usually reverse chronological (newest first).
-        // Let's assume index 0 is newest.
-        const current = getValueByPath(rows[0], key);
-        const previous = getValueByPath(rows[1], key);
-        
-        const curVal = parseFloat(current);
-        const prevVal = parseFloat(previous);
-        
-        if (isNaN(curVal) || isNaN(prevVal)) return null;
+        return null;
+    }, [data, widget.data.selectedFields]);
 
-        const change = curVal - prevVal;
-        const changePercent = (change / prevVal) * 100;
+    const [activeTab, setActiveTab] = useState<'chart' | 'table' | 'json'>('json'); // Default to json mostly safe
 
-        return {
-            current: curVal,
-            change: change,
-            changePercent: changePercent
-        };
+    // Auto-select tab on mount/data load
+    useEffect(() => {
+        if (!data) return;
+        // Prioritize Chart if we have array data suitable for it
+        if (Array.isArray(data) || (widget.data.selectedFields?.some(f => f.includes('[]')))) {
+             setActiveTab('chart');
+        } else if (Array.isArray(data)) {
+             setActiveTab('table');
+        } else {
+             setActiveTab('json');
+        }
     }, [data, widget.data.selectedFields]);
 
     return (
-        <div className="min-h-screen bg-background p-6 space-y-6">
+        <div className="min-h-screen bg-background p-6 space-y-8">
             
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-foreground tracking-tight">{widget.data.title}</h1>
-                    <p className="text-muted-foreground text-sm mt-1 font-mono">
-                        {new URL(widget.data.apiEndpoint).hostname}
-                    </p>
+                    <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary via-secondary to-accent">
+                        {widget.data.title}
+                    </h1>
+                    <div className="flex items-center gap-2 mt-2">
+                        <div className="h-2 w-2 rounded-full bg-accent animate-pulse"></div>
+                        <p className="text-muted-foreground text-sm font-medium">
+                            {(() => {
+                                try {
+                                    return new URL(widget.data.apiEndpoint).hostname;
+                                } catch {
+                                    return 'Local Source';
+                                }
+                            })()}
+                        </p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => window.location.reload()} // Simple reload or re-trigger hook? Hook auto-refreshes.
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary/50 hover:bg-secondary text-secondary-foreground rounded-lg transition-colors text-sm font-medium"
+                        onClick={() => window.location.reload()}
+                        className="flex items-center gap-2 px-5 py-2.5 glass hover:bg-white/10 rounded-xl transition-all duration-200 text-sm font-semibold hover:scale-105"
                     >
                          {loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
                          Refresh
                     </button>
                     <button 
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 px-4 py-2 bg-secondary/50 hover:bg-secondary text-secondary-foreground rounded-lg transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-secondary text-white rounded-xl transition-all duration-200 text-sm font-semibold hover:scale-105 hover:shadow-lg hover:shadow-primary/50"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         Back
@@ -154,19 +229,19 @@ function WidgetDetailsContent({ widget }: { widget: Widget }) {
             </div>
 
             {/* Tabs & Content */}
-            <div className="space-y-4">
+            <div className="space-y-6">
                 {/* Tabs Config */}
-                <div className="flex justify-center border-b border-border/40 pb-1">
-                     <div className="flex gap-8">
+                <div className="flex justify-center">
+                     <div className="inline-flex gap-2 glass rounded-xl p-1.5">
                         {(['chart', 'table', 'json'] as const).map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={cn(
-                                    "pb-3 text-sm font-medium transition-all relative px-2 capitalize",
+                                    "px-6 py-2.5 text-sm font-semibold transition-all duration-200 rounded-lg capitalize",
                                     activeTab === tab 
-                                        ? "text-primary after:absolute after:bottom-0 after:left-0 after:w-full after:h-[2px] after:bg-primary" 
-                                        : "text-muted-foreground hover:text-foreground"
+                                        ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg" 
+                                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
                                 )}
                             >
                                 {tab === 'json' ? 'Raw JSON' : tab}
@@ -176,8 +251,8 @@ function WidgetDetailsContent({ widget }: { widget: Widget }) {
                 </div>
 
                 {/* Content Area */}
-                <div className="bg-card border border-border rounded-xl p-1 min-h-[500px]">
-                    <div className="h-full w-full p-4">
+                <div className="glass border border-white/10 rounded-2xl p-6 min-h-[500px] shadow-xl">
+                    <div className="h-full w-full">
                         {error && (
                             <div className="h-full flex items-center justify-center text-destructive">
                                 {error}
@@ -224,15 +299,20 @@ function StatsCard({ label, value, trend, colored }: { label: string, value: str
     const isNegative = trend === 'down';
     
     return (
-        <div className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col justify-center gap-2 relative overflow-hidden group">
-            {/* Subtle Gradient Background */}
-             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="glass border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col justify-center gap-3 relative overflow-hidden group hover:scale-105 transition-all duration-300">
+            {/* Gradient Background */}
+             <div className={cn(
+                 "absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity",
+                 colored && isPositive && "bg-gradient-to-br from-accent/10 to-transparent",
+                 colored && isNegative && "bg-gradient-to-br from-destructive/10 to-transparent",
+                 !colored && "bg-gradient-to-br from-primary/5 to-transparent"
+             )} />
             
-            <span className="text-sm font-medium text-muted-foreground z-10">{label}</span>
+            <span className="text-sm font-semibold text-muted-foreground z-10 uppercase tracking-wide">{label}</span>
             <span className={cn(
-                "text-3xl font-bold tracking-tight z-10",
-                colored && isPositive && "text-blue-500", // Using blue for positive as per screenshot
-                colored && isNegative && "text-red-500",
+                "text-4xl font-bold tracking-tight z-10",
+                colored && isPositive && "text-accent",
+                colored && isNegative && "text-destructive",
                 !colored && "text-foreground"
             )}>
                 {value}

@@ -1,77 +1,61 @@
 @import "tailwindcss";
 
 @layer base {
-  /* Light Mode (Default) */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 220 15% 10%;
+    --foreground: 220 10% 95%;
     
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 15% 13%;
+    --card-foreground: 220 10% 95%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 15% 13%;
+    --popover-foreground: 220 10% 95%;
     
-    --primary: 150 100% 35%; 
-    --primary-foreground: 210 40% 98%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
     
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 220 10% 95%;
     
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 15% 16%;
+    --muted-foreground: 220 10% 60%;
     
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 142 70% 45%;
+    --accent-foreground: 0 0% 100%;
     
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
     
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 150 100% 35%;
+    --border: 220 15% 20%;
+    --input: 220 15% 16%;
+    --ring: 142 70% 45%;
     
     --radius: 0.5rem;
   }
 
-  /* Dark Mode - Use explicitly higher specificity and ensure color-scheme */
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-
-    --card: 224 71% 4%;
-    --card-foreground: 213 31% 91%;
-
-    --popover: 224 71% 4%;
-    --popover-foreground: 215 20.2% 65.1%;
-
-    --primary: 150 100% 35%;
-    --primary-foreground: 222.2 47.4% 1.2%;
-
-    --secondary: 222.2 47.4% 11.2%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 223 47% 11%;
-    --muted-foreground: 215.4 16.3% 56.9%;
-
-    --accent: 216 34% 17%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 216 34% 17%;
-    --input: 216 34% 17%;
-    --ring: 150 100% 35%;
+    --background: 220 15% 10%;
+    --foreground: 220 10% 95%;
+    --card: 220 15% 13%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 15% 13%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 220 10% 95%;
+    --muted: 220 15% 16%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 142 70% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 15% 20%;
+    --input: 220 15% 16%;
+    --ring: 142 70% 45%;
   }
 }
 
-/* Update @theme to use functional color notation with hsl() wrapper if inputs are raw numbers */
-/* Assuming the vars above are raw numbers (Space separated), we need to wrapper them. 
-   If they were `hsl(...)` strings, we wouldn't. 
-   Let's Switch back to raw HSL numbers above (removed 'hsl' string), and wrapper them here.
-   Use `hsl(var(--...))` pattern.
-*/
 @theme {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -107,6 +91,10 @@
   
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-slide-in: slide-in 0.3s ease-out;
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-scale-in: scale-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-glow: glow 2s ease-in-out infinite;
 
   @keyframes accordion-down {
     from { height: 0 }
@@ -116,13 +104,92 @@
     from { height: var(--radix-accordion-content-height) }
     to { height: 0 }
   }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(56, 189, 248, 0.5);
+    }
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  }
+  
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer utilities {
+  .glass {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  .bg-primary-solid {
+    background: hsl(var(--primary));
+  }
+  
+  .bg-accent-solid {
+    background: hsl(var(--accent));
+  }
+  
+  .hover-lift {
+    transition: transform 0.2s ease;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-2px);
   }
 }

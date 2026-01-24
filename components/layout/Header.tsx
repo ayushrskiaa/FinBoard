@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Plus, Settings2, LayoutTemplate, Download, Upload } from 'lucide-react';
+import { BarChart3, Plus, Settings2, LayoutTemplate, Download, Upload, Sparkles } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -49,39 +49,50 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
   };
 
   return (
-    <header className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <BarChart3 className="h-5 w-5 text-primary-foreground" />
+    <header className="glass sticky top-0 z-50 border-b border-white/10">
+      <div className="container flex h-20 items-center justify-between px-6">
+        <div className="flex items-center gap-4">
+          {/* Logo */}
+          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
+            <BarChart3 className="h-5 w-5 text-white" />
           </div>
+          
           <div>
-            <h1 className="text-xl font-bold tracking-tight">FinBoard</h1>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              FinBoard
+            </h1>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>{widgets.length} active widget{widgets.length !== 1 ? 's' : ''}</span>
-              <span>•</span>
-              <Link href="/faq" className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2">
-                 Help & FAQ
+              <div className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-accent"></div>
+                <span className="font-medium">{widgets.length} active widget{widgets.length !== 1 ? 's' : ''}</span>
+              </div>
+              <span className="text-border">•</span>
+              <Link 
+                href="/faq" 
+                className="hover:text-primary transition-colors"
+              >
+                Help & FAQ
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 mr-2">
+        <div className="flex items-center gap-3">
+          {/* Action buttons with modern styling */}
+          <div className="flex items-center gap-1 mr-2 glass rounded-lg p-1">
              <button 
                onClick={handleExport}
-               className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
+               className="p-2.5 text-muted-foreground hover:text-primary rounded-md hover:bg-white/10 transition-all duration-200 group"
                title="Export Config"
              >
-               <Download className="h-4 w-4" />
+               <Download className="h-4 w-4 group-hover:scale-110 transition-transform" />
              </button>
              <button 
                onClick={() => fileInputRef.current?.click()}
-               className="p-2 text-muted-foreground hover:text-foreground rounded-md hover:bg-accent transition-colors"
+               className="p-2.5 text-muted-foreground hover:text-secondary rounded-md hover:bg-white/10 transition-all duration-200 group"
                title="Import Config"
              >
-               <Upload className="h-4 w-4" />
+               <Upload className="h-4 w-4 group-hover:scale-110 transition-transform" />
              </button>
              <input 
                type="file" 
@@ -93,14 +104,16 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
           </div>
 
           <ThemeToggle />
-          <div className="h-6 w-px bg-border mx-1" />
+          
+          <div className="h-8 w-px bg-gradient-to-b from-transparent via-border to-transparent mx-1" />
+          
           <button
             onClick={toggleEditMode}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-md transition-colors text-sm font-medium",
+              "flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium",
               isEditMode 
-                ? "bg-accent text-accent-foreground" 
-                : "hover:bg-accent/50 text-muted-foreground hover:text-foreground"
+                ? "bg-accent text-white" 
+                : "bg-secondary hover:bg-secondary/80 text-foreground"
             )}
           >
             <LayoutTemplate className="h-4 w-4" />
@@ -109,7 +122,7 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
           
           <button
             onClick={onAddWidget}
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all duration-200 text-sm font-medium"
           >
             <Plus className="h-4 w-4" />
             Add Widget
