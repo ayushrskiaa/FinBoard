@@ -1,11 +1,11 @@
 'use client';
 
-import { BarChart3, Plus, Settings2, LayoutTemplate } from 'lucide-react';
+import { BarChart3, Plus, Settings2, LayoutTemplate, Download, Upload } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { Download, Upload } from 'lucide-react';
 import { useRef } from 'react';
 
 export function Header({ onAddWidget }: { onAddWidget: () => void }) {
@@ -45,7 +45,6 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
       }
     };
     reader.readAsText(file);
-    // Reset inputs
     e.target.value = '';
   };
 
@@ -58,9 +57,13 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
           </div>
           <div>
             <h1 className="text-xl font-bold tracking-tight">FinBoard</h1>
-            <p className="text-xs text-muted-foreground">
-              {widgets.length} active widget{widgets.length !== 1 ? 's' : ''} • Real-time data
-            </p>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>{widgets.length} active widget{widgets.length !== 1 ? 's' : ''}</span>
+              <span>•</span>
+              <Link href="/faq" className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2">
+                 Help & FAQ
+              </Link>
+            </div>
           </div>
         </div>
 

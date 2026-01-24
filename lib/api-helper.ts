@@ -1,12 +1,34 @@
 export async function fetchApiData(url: string) {
+  // Inject API Key for Alpha Vantage if missing
+  if (url.includes('alphavantage.co') && !url.includes('apikey=')) {
+    const apiKey = process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY;
+    if (apiKey) {
+      const separator = url.includes('?') ? '&' : '?';
+      url = `${url}${separator}apikey=${apiKey}`;
+    }
+  }
+
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Status: ${res.status}`);
     const data = await res.json();
     return data;
   } catch (error) {
-    console.error("API Fetch Error:", error);
-    throw error;
+    console.warn("Direct fetch failed, attempting proxy...", error);
+    try {
+        // Fallback to proxy
+        const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxyUrl);
+        if (!res.ok) {
+             const errText = await res.text();
+             throw new Error(`Proxy Status: ${res.status} - ${errText}`);
+        }
+        const data = await res.json();
+        return data;
+    } catch (proxyError) {
+        console.error("API Proxy Fetch Error:", proxyError);
+        throw proxyError;
+    }
   }
 }
 

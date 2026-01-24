@@ -31,6 +31,7 @@ export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) 
   const [refreshInterval, setRefreshInterval] = useState(initialWidget?.data.refreshInterval || 30);
   const [selectedFields, setSelectedFields] = useState<string[]>(initialWidget?.data.selectedFields || []);
   const [displayMode, setDisplayMode] = useState<WidgetType>(initialWidget?.data.displayMode || 'price-card');
+  const [fieldFormatting, setFieldFormatting] = useState<Record<string, 'default' | 'currency' | 'percent' | 'number'>>(initialWidget?.data.fieldFormatting || {});
 
   useEffect(() => {
      // If editing, valid data exists, but maybe we want to refresh fields just in case?
@@ -61,6 +62,7 @@ export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) 
       refreshInterval,
       selectedFields,
       displayMode,
+      fieldFormatting,
       cachedData: apiData,
       lastUpdated: Date.now(),
     };
@@ -103,6 +105,31 @@ export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           
           <div className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Quick Presets</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'Stock Intraday (Chart)', url: 'https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol=IBM&interval=5min', icon: '📈' },
+                  { label: 'Stock Daily (Chart)', url: 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM', icon: '📅' },
+                  { label: 'Crypto Trend (Chart)', url: 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=BTC&market=USD', icon: '📉' },
+                  { label: 'Crypto Market (Rich Data)', url: 'https://api.coincap.io/v2/assets?limit=20', icon: '💰' },
+                  { label: 'CoinGecko Market (Backup)', url: 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=20&page=1&sparkline=false', icon: '🦎' },
+                  { label: 'Binance 24h Ticker (Plan C)', url: 'https://api.binance.com/api/v3/ticker/24hr', icon: '🔶' },
+                  { label: 'Exchange Rates', url: 'https://api.coincap.io/v2/rates', icon: '💱' },
+                  { label: 'AlphaVantage Quote', url: 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM', icon: '💲' },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => { setUrl(preset.url); setTitle(preset.label); }}
+                    className="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-full border border-gray-700 transition-colors flex items-center gap-1.5"
+                  >
+                    <span>{preset.icon}</span>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Widget Name</label>
               <input 
@@ -186,6 +213,12 @@ export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) 
                         </button>
                       ))}
                     </div>
+                    {displayMode === 'chart' && !selectedFields.some(f => f.includes('[]')) && (
+                        <div className="flex items-center gap-2 mt-2 text-xs text-yellow-400 bg-yellow-400/10 p-2 rounded border border-yellow-400/20">
+                           <AlertCircle className="h-3 w-3" />
+                           Charts require array data (Time Series). Current selection may not render.
+                        </div>
+                    )}
                </div>
 
                <div className="space-y-2">
@@ -237,6 +270,33 @@ export function AddWidgetModal({ onClose, initialWidget }: AddWidgetModalProps) 
                                 <button onClick={() => toggleField(field)} className="hover:text-white"><X className="h-3 w-3" /></button>
                             </div>
                         ))}
+                     </div>
+                 )}
+
+                 {/* Field Formatting Configuration */}
+                 {selectedFields.length > 0 && (
+                     <div className="space-y-3 mt-4 pt-4 border-t border-gray-800 animate-in slide-in-from-bottom-2 duration-300">
+                        <label className="text-xs font-medium text-gray-400 uppercase tracking-wider">Field Formatting</label>
+                        <div className="grid grid-cols-1 gap-3 max-h-[160px] overflow-y-auto pr-2 custom-scrollbar">
+                           {selectedFields.map(field => (
+                               <div key={field} className="flex items-center justify-between gap-4 bg-[#131b2e] p-2.5 rounded-lg border border-gray-800">
+                                   <div className="flex flex-col overflow-hidden">
+                                      <span className="truncate font-medium text-sm text-gray-200">{field.split(/[/.]/).pop()}</span>
+                                      <span className="truncate font-mono text-[10px] text-gray-500">{field}</span>
+                                   </div>
+                                   <select
+                                     value={fieldFormatting[field] || 'default'}
+                                     onChange={(e) => setFieldFormatting(prev => ({ ...prev, [field]: e.target.value as any }))}
+                                     className="bg-[#0b1221] border border-gray-700 rounded px-2 py-1 text-xs text-gray-300 outline-none focus:border-green-500 min-w-[100px]"
+                                   >
+                                       <option value="default">Default</option>
+                                       <option value="currency">Currency ($)</option>
+                                       <option value="percent">Percentage (%)</option>
+                                       <option value="number">Number (1.23)</option>
+                                   </select>
+                               </div>
+                           ))}
+                        </div>
                      </div>
                  )}
                </div>

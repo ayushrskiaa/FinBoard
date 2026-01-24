@@ -27,7 +27,14 @@ export function SimpleChart({ data, selectedFields }: SimpleChartProps) {
   const arrayPath = bracketIndex !== -1 ? arrayField.substring(0, bracketIndex + 2) : '';
 
   if (!arrayPath || arrayPath === arrayField) {
-      return <div className="p-4 text-muted-foreground">Select fields inside an array for the chart.</div>;
+      return (
+        <div className="flex flex-col items-center justify-center p-4 text-center h-full">
+           <p className="text-sm text-yellow-500 font-medium mb-1">Chart Unavailable</p>
+           <p className="text-xs text-muted-foreground">
+             Data is not a time series. Please edit and switch to <strong>Price Card</strong> mode.
+           </p>
+        </div>
+      );
   }
 
   const rows = getValueByPath(data, arrayPath);

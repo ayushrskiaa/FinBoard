@@ -61,48 +61,90 @@ export function DashboardGrid({ onAddWidget, onEditWidget }: DashboardGridProps)
         <p className="text-muted-foreground max-w-md mb-8">
           Create custom widgets by connecting to any finance API. Track stocks, crypto, forex, or economic indicators - all in real-time.
         </p>
-        <div className="flex gap-4">
+        <div className="flex flex-wrap justify-center gap-4">
           <button
             onClick={onAddWidget}
-            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all hover:scale-105 shadow-lg shadow-primary/20"
+            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-all hover:scale-105 shadow-lg shadow-primary/20 flex items-center gap-2"
           >
-            + Add First Widget
+            <Plus className="h-5 w-5" />
+            Create Scratch
           </button>
+          
+          <div className="h-10 w-px bg-border mx-2" />
+
           <button
             onClick={() => {
-               const demoWidgets = [
+               const cryptoWidgets = [
                  {
-                   id: 'demo-btc',
-                   data: {
-                     title: 'Bitcoin Price',
-                     apiEndpoint: 'https://api.coinbase.com/v2/prices/BTC-USD/spot',
-                     refreshInterval: 60,
-                     selectedFields: ['data.amount', 'data.currency'],
-                     displayMode: 'price-card',
-                     lastUpdated: 0
-                   },
+                   id: 'btc-usd',
+                   data: { title: 'Bitcoin', apiEndpoint: 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=BTC&market=USD', refreshInterval: 60, selectedFields: ['Time Series (Digital Currency Daily)/2024-01-24/4a. close (USD)', 'Time Series (Digital Currency Daily)/2024-01-24/4b. close (USD)'], displayMode: 'price-card', lastUpdated: Date.now() },
                    layout: { w: 1, h: 1, x: 0, y: 0 }
                  },
+                 // Add more realistic crypto defaults? Real URLs might be needed. 
+                 // Alpha Vantage requires parsing.
+                 // Let's stick to safe "Coinbase" or similar for demo if possible?
+                 // Or just use the verified Presets URLs?
+                 // Let's use the Presets I added in AddWidgetModal as reference.
                  {
-                   id: 'demo-eth',
-                   data: {
-                     title: 'Ethereum Price',
-                     apiEndpoint: 'https://api.coinbase.com/v2/prices/ETH-USD/spot',
-                     refreshInterval: 60,
-                     selectedFields: ['data.amount', 'data.currency'],
-                     displayMode: 'price-card',
-                     lastUpdated: 0
-                   },
-                   layout: { w: 1, h: 1, x: 0, y: 0 }
+                   id: 'eth-chart',
+                   data: { title: 'Ethereum Trend', apiEndpoint: 'https://www.alphavantage.co/query?function=DIGITAL_CURRENCY_DAILY&symbol=ETH&market=USD', refreshInterval: 300, selectedFields: ['Time Series (Digital Currency Daily)/[]/4a. close (USD)'], displayMode: 'chart', lastUpdated: Date.now() },
+                   layout: { w: 2, h: 1, x: 1, y: 0 }
                  }
                ];
-               // We need safe casting or ensure types match. 
-               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-               demoWidgets.forEach(w => useDashboardStore.getState().addWidget(w as any));
+               // Note: Real usage requires key in URL for AlphaVantage usually, but some endpoints work? 
+               // Actually the user needs to provide their key or use a free public one.
+               // My presets in AddWidgetModal didn't include keys.
+               // AlphaVantage enforces keys.
+               // I should warn the user or provide a "Enter API Key" hint?
+               // Or use a truly public API like 'https://api.coincap.io/v2/assets'.
+               
+               const coinCapWidgets = [
+                  {
+                     id: 'btc-price',
+                     data: { 
+                        title: 'Bitcoin Price', 
+                        apiEndpoint: 'https://api.coincap.io/v2/assets/bitcoin', 
+                        refreshInterval: 10, 
+                        selectedFields: ['data/priceUsd', 'data/changePercent24Hr'], 
+                        displayMode: 'price-card',
+                        fieldFormatting: { 'data/priceUsd': 'currency', 'data/changePercent24Hr': 'percent' },
+                        lastUpdated: Date.now() 
+                     },
+                     layout: { w: 1, h: 1, x: 0, y: 0 }
+                  },
+                  {
+                     id: 'eth-price',
+                     data: { 
+                        title: 'Ethereum Price', 
+                        apiEndpoint: 'https://api.coincap.io/v2/assets/ethereum', 
+                        refreshInterval: 10, 
+                        selectedFields: ['data/priceUsd', 'data/changePercent24Hr'], 
+                        displayMode: 'price-card', 
+                        fieldFormatting: { 'data/priceUsd': 'currency', 'data/changePercent24Hr': 'percent' },
+                        lastUpdated: Date.now() 
+                     },
+                     layout: { w: 1, h: 1, x: 1, y: 0 }
+                  },
+                   {
+                     id: 'market-table',
+                     data: { 
+                        title: 'Top Crypto Assets', 
+                        apiEndpoint: 'https://api.coincap.io/v2/assets?limit=10', 
+                        refreshInterval: 30, 
+                        selectedFields: ['data[]/rank', 'data[]/symbol', 'data[]/priceUsd', 'data[]/changePercent24Hr'], 
+                        displayMode: 'table', 
+                        fieldFormatting: { 'data[]/priceUsd': 'currency', 'data[]/changePercent24Hr': 'percent' },
+                        lastUpdated: Date.now() 
+                     },
+                     layout: { w: 2, h: 2, x: 0, y: 1 }
+                  }
+               ];
+               
+               coinCapWidgets.forEach(w => useDashboardStore.getState().addWidget(w as any));
             }}
-            className="px-6 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-all"
+            className="px-5 py-3 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-secondary/80 transition-all border border-border"
           >
-            Load Demo Data
+            Load Crypto Template
           </button>
         </div>
       </div>

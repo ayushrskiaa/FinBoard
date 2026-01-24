@@ -13,29 +13,34 @@ interface DataTableProps {
   data: any;
   selectedFields: string[];
   compact?: boolean;
+  formatting?: Record<string, 'default' | 'currency' | 'percent' | 'number'>;
 }
 
-export function DataTable({ data, selectedFields, compact }: DataTableProps) {
+export function DataTable({ data, selectedFields, compact, formatting }: DataTableProps) {
+
   if (!data || selectedFields.length === 0) return null;
 
   // Assume the first field dictates the array source to keep it simple
   // e.g. "data.items[].id" -> array path is "data.items[]"
-  // Prioritize finding an array field to determine the main data source
-  const arrayField = selectedFields.find(f => f.includes('[]')) || selectedFields[0];
-  const bracketIndex = arrayField.indexOf('[]');
-  const arrayPath = bracketIndex !== -1 ? arrayField.substring(0, bracketIndex + 2) : '';
-  
-  // If no array path found, fallback to just displaying single values in a list (technically generic table)
-  if (!arrayPath || arrayPath === arrayField) {
-      // Not an array property selection, or user selected the array itself
-      return <div className="p-4 text-muted-foreground">Select specific fields inside an array for the table view.</div>;
+  const arrayField = selectedFields.find(f => f.includes('[]'));
+  let arrayPath = '';
+  let rows: any[] = [];
+
+  if (arrayField) {
+      const bracketIndex = arrayField.indexOf('[]');
+      arrayPath = arrayField.substring(0, bracketIndex + 2);
+      const rawRows = getValueByPath(data, arrayPath);
+      
+      if (Array.isArray(rawRows)) {
+          rows = rawRows;
+      }
+  } else {
+      // Flat data - treat as single row
+      rows = [data];
   }
 
-  // Get the array data
-  const rows = getValueByPath(data, arrayPath);
-
-  if (!Array.isArray(rows)) {
-    return <div className="p-4 text-muted-foreground">No array data found at {arrayPath}</div>;
+  if (rows.length === 0) {
+      return <div className="p-4 text-muted-foreground">No data found to display.</div>;
   }
 
   // Calculate columns based on selected fields relative to the array
@@ -70,37 +75,72 @@ export function DataTable({ data, selectedFields, compact }: DataTableProps) {
     });
   });
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const pageSize = 50;
+  const totalPages = Math.ceil(filteredRows.length / pageSize);
+  
+  const paginatedRows = filteredRows.slice((page - 1) * pageSize, page * pageSize);
+
+  // Reset page when search changes
+  if (page > totalPages && totalPages > 0) {
+      setPage(1);
+  }
+
   return (
     <div className="h-full flex flex-col w-full">
-      <div className="px-2 pb-2">
+      <div className="px-2 pb-2 flex justify-between items-center gap-2">
          <input 
            type="text" 
-           placeholder="Search table..." 
+           placeholder={`Search ${rows.length} rows...`}
            value={search}
-           onChange={(e) => setSearch(e.target.value)}
-           className="w-full bg-muted/50 border border-border rounded-md px-3 py-1 text-sm focus:ring-1 focus:ring-primary outline-none"
+           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+           className="flex-1 bg-muted/50 border border-border rounded-md px-3 py-1.5 text-sm focus:ring-1 focus:ring-primary outline-none"
          />
+         {!compact && (
+             <div className="text-xs text-muted-foreground whitespace-nowrap">
+                 {filteredRows.length} items
+             </div>
+         )}
       </div>
+      
       {!compact && (
-      <div className="overflow-auto flex-1">
+      <div className="overflow-auto flex-1 border rounded-md border-border/50">
       <table className="w-full text-sm text-left">
-        <thead className="bg-muted/50 sticky top-0 z-10 backdrop-blur-md">
+        <thead className="bg-muted/80 sticky top-0 z-10 backdrop-blur-md text-xs uppercase tracking-wider">
           <tr>
             {columns.map(col => (
-              <th key={col.field} className="px-4 py-2 font-medium text-muted-foreground">
+              <th key={col.field} className="px-4 py-2 font-medium text-muted-foreground border-b border-border/50">
                 {col.label}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-border/50">
-          {filteredRows.map((row, rowIndex) => (
+        <tbody className="divide-y divide-border/50 bg-card">
+          {paginatedRows.map((row, rowIndex) => (
             <tr key={rowIndex} className="hover:bg-muted/20 transition-colors">
               {columns.map(col => {
                  const val = getValueByPath(row, col.key);
+                 let displayVal = typeof val === 'object' && val !== null ? JSON.stringify(val) : String(val ?? '-');
+                 
+                 // Apply formatting
+                 const format = formatting?.[col.field];
+                 if (val !== null && val !== undefined) {
+                     const num = parseFloat(String(val));
+                     if (!isNaN(num) && isFinite(num) && String(val).trim() !== '' && !String(val).includes('-')) { // Avoid date-like things 2023-10-10 getting parsed as 2023
+                          if (format === 'currency') {
+                              displayVal = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+                          } else if (format === 'percent') {
+                               displayVal = num.toLocaleString(undefined, { maximumFractionDigits: 2 }) + '%';
+                          } else if (format === 'number') {
+                              displayVal = num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                          }
+                     }
+                 }
+
                  return (
-                   <td key={col.field} className="px-4 py-2 text-foreground truncate max-w-[150px]">
-                      {typeof val === 'object' ? JSON.stringify(val) : String(val ?? '-')}
+                   <td key={col.field} className="px-4 py-2 text-foreground/80 truncate max-w-[150px] font-mono text-xs">
+                      {displayVal}
                    </td>
                  );
               })}
@@ -109,9 +149,34 @@ export function DataTable({ data, selectedFields, compact }: DataTableProps) {
         </tbody>
       </table>
       {filteredRows.length === 0 && (
-        <div className="p-4 text-center text-muted-foreground text-xs">No matching results</div>
+        <div className="p-8 text-center text-muted-foreground text-sm">No matching results found</div>
       )}
       </div>
+      )}
+
+      {/* Pagination Controls */}
+      {!compact && totalPages > 1 && (
+          <div className="flex items-center justify-between px-2 pt-2 text-xs">
+              <span className="text-muted-foreground">
+                  Page {page} of {totalPages}
+              </span>
+              <div className="flex gap-2">
+                  <button 
+                    disabled={page === 1}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    className="px-3 py-1 bg-muted rounded hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                      Prev
+                  </button>
+                  <button 
+                    disabled={page === totalPages}
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    className="px-3 py-1 bg-muted rounded hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                      Next
+                  </button>
+              </div>
+          </div>
       )}
     </div>
   );

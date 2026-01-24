@@ -9,6 +9,7 @@ export interface WidgetData {
   refreshInterval: number;
   selectedFields?: string[];
   displayMode: WidgetType;
+  fieldFormatting?: Record<string, 'default' | 'currency' | 'percent' | 'number'>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   cachedData?: any;
   lastUpdated?: number;
