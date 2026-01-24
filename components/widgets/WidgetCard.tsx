@@ -95,14 +95,8 @@ export function WidgetCard({ widget, onEdit }: { widget: Widget; onEdit?: () => 
 
       <Link 
         href={`/widget/${widget.id}`} 
-        className="relative flex-1 px-5 py-4 overflow-hidden flex flex-col justify-center cursor-pointer hover:bg-white/5 transition-all duration-200 group/content"
+        className="relative flex-1 px-5 py-8 overflow-hidden flex flex-col justify-center cursor-pointer hover:bg-white/5 transition-all duration-200 group/content"
       >
-        <div className="absolute top-2 right-2 opacity-0 group-hover/content:opacity-100 transition-opacity">
-          <div className="px-3 py-1.5 rounded-lg glass border border-primary/20 text-xs text-primary font-medium flex items-center gap-1.5">
-            <Eye className="h-3 w-3" />
-            View Details
-          </div>
-        </div>
         {renderContent()}
       </Link>
 

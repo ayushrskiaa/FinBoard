@@ -1,16 +1,17 @@
 'use client';
 
-import { BarChart3, Plus, Settings2, LayoutTemplate, Download, Upload, Sparkles } from 'lucide-react';
+import { BarChart3, Plus, LayoutTemplate, Download, Upload, Menu } from 'lucide-react';
 import { useDashboardStore } from '@/store/useDashboardStore';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 export function Header({ onAddWidget }: { onAddWidget: () => void }) {
   const { isEditMode, toggleEditMode, widgets, reorderWidgets } = useDashboardStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleExport = () => {
     const data = JSON.stringify({ widgets }, null, 2);
@@ -50,35 +51,47 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
 
   return (
     <header className="glass sticky top-0 z-50 border-b border-white/10">
-      <div className="container flex h-20 items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          {/* Logo */}
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center shadow-md">
-            <BarChart3 className="h-5 w-5 text-white" />
+      <div className="container flex h-16 md:h-20 items-center justify-between px-4 md:px-6">
+        <div className="flex items-center gap-2 md:gap-4">
+          <div className="relative h-8 w-8 md:h-10 md:w-10 rounded-lg bg-gradient-to-br from-primary to-accent shadow-lg">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <svg viewBox="0 0 32 32" className="h-full w-full p-1">
+                <path 
+                  d="M 8 8 L 8 24 M 8 8 L 18 8 M 8 14 L 16 14" 
+                  stroke="white" 
+                  strokeWidth="2.5" 
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <rect x="20" y="18" width="2.5" height="6" rx="0.5" fill="white" opacity="0.7"/>
+                <rect x="23" y="15" width="2.5" height="9" rx="0.5" fill="white" opacity="0.85"/>
+                <rect x="26" y="12" width="2.5" height="12" rx="0.5" fill="white"/>
+              </svg>
+            </div>
           </div>
           
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
+            <h1 className="text-lg md:text-xl font-bold tracking-tight text-foreground">
               FinBoard
             </h1>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <div className="h-1.5 w-1.5 rounded-full bg-accent"></div>
-                <span className="font-medium">{widgets.length} active widget{widgets.length !== 1 ? 's' : ''}</span>
+                <span className="font-medium">{widgets.length} widget{widgets.length !== 1 ? 's' : ''}</span>
               </div>
               <span className="text-border">•</span>
               <Link 
                 href="/faq" 
                 className="hover:text-primary transition-colors"
               >
-                Help & FAQ
+                Help
               </Link>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Action buttons with modern styling */}
+        {/* Desktop Actions */}
+        <div className="hidden md:flex items-center gap-3">
           <div className="flex items-center gap-1 mr-2 glass rounded-lg p-1">
              <button 
                onClick={handleExport}
@@ -117,7 +130,7 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
             )}
           >
             <LayoutTemplate className="h-4 w-4" />
-            {isEditMode ? 'Done Editing' : 'Edit Layout'}
+            {isEditMode ? 'Done' : 'Edit'}
           </button>
           
           <button
@@ -128,7 +141,89 @@ export function Header({ onAddWidget }: { onAddWidget: () => void }) {
             Add Widget
           </button>
         </div>
+
+        {/* Mobile Actions */}
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={onAddWidget}
+            className="p-2 rounded-lg bg-primary text-white hover:bg-primary/90 transition-all duration-200"
+            title="Add Widget"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+          
+          <button
+            onClick={toggleEditMode}
+            className={cn(
+              "p-2 rounded-lg transition-all duration-200",
+              isEditMode 
+                ? "bg-accent text-white" 
+                : "bg-secondary text-foreground"
+            )}
+            title={isEditMode ? 'Done Editing' : 'Edit Layout'}
+          >
+            <LayoutTemplate className="h-5 w-5" />
+          </button>
+
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 rounded-lg bg-secondary text-foreground hover:bg-secondary/80 transition-all duration-200"
+            title="Menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-white/10 bg-card/95 backdrop-blur-sm">
+          <div className="container px-4 py-3 space-y-2">
+            <button
+              onClick={() => {
+                handleExport();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary/50 hover:bg-secondary text-foreground transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              <span className="text-sm font-medium">Export Config</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                fileInputRef.current?.click();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary/50 hover:bg-secondary text-foreground transition-colors"
+            >
+              <Upload className="h-4 w-4" />
+              <span className="text-sm font-medium">Import Config</span>
+            </button>
+
+            <Link
+              href="/faq"
+              onClick={() => setMobileMenuOpen(false)}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-secondary/50 hover:bg-secondary text-foreground transition-colors"
+            >
+              <span className="text-sm font-medium">Help & FAQ</span>
+            </Link>
+
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-sm text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <input 
+        type="file" 
+        ref={fileInputRef} 
+        className="hidden" 
+        accept=".json"
+        onChange={handleImport}
+      />
     </header>
   );
 }
