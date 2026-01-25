@@ -2,23 +2,23 @@
 
 @layer base {
   :root {
-    --background: 220 15% 10%;
-    --foreground: 220 10% 95%;
+    --background: 0 0% 100%;
+    --foreground: 220 15% 10%;
     
-    --card: 220 15% 13%;
-    --card-foreground: 220 10% 95%;
+    --card: 0 0% 98%;
+    --card-foreground: 220 15% 10%;
     
-    --popover: 220 15% 13%;
-    --popover-foreground: 220 10% 95%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 220 15% 10%;
     
     --primary: 142 70% 45%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 220 10% 95%;
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 15% 10%;
     
-    --muted: 220 15% 16%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 10% 40%;
     
     --accent: 142 70% 45%;
     --accent-foreground: 0 0% 100%;
@@ -26,8 +26,8 @@
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 220 15% 20%;
-    --input: 220 15% 16%;
+    --border: 220 15% 88%;
+    --input: 220 15% 92%;
     --ring: 142 70% 45%;
     
     --radius: 0.5rem;
@@ -185,9 +185,9 @@
 @layer utilities {
   .glass {
     background: hsl(var(--card) / 0.8);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid hsl(var(--border));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
   
   .bg-primary-solid {

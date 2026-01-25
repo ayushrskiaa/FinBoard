@@ -14,7 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "FinBoard | Your Custom Finance Dashboard",
-  description: "Real-time finance dashboard with custom widgets and API integration",
+  description: "Real-time finance dashboard with custom widgets and API integration. Track stocks, crypto, forex, and more.",
+  icons: {
+    icon: '/icon.svg',
+  },
+  themeColor: '#22c55e',
 };
 
 import { ThemeProvider } from "@/components/theme-provider";
@@ -33,8 +37,8 @@ export default function RootLayout({
         <ThemeProvider
             attribute="class"
             defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
+            enableSystem={false}
+            storageKey="finboard-theme"
           >
             {children}
         </ThemeProvider>
